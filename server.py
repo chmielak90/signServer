@@ -37,6 +37,19 @@ def handle_client(conn, client_addr, context):
         logging.info(f'Refused connection from {client_addr}: certificate not recognized')
         return
 
+    # Receive the signing command
+    data = connstream.recv(BUFFER_SIZE)
+    signing_command = data.decode('utf-8').split()
+    logging.info(f'Received signing command: {signing_command}')
+
+    # Receive the filename
+    data = connstream.recv(BUFFER_SIZE)
+    filename = data.decode('utf-8')
+    logging.info(f'Received filename data: {filename}')
+    filename = os.path.basename(filename)  # Only use the basename of the filename
+    logging.info(f'Using filename: {filename}')
+
+
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
 
