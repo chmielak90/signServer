@@ -1,8 +1,13 @@
+import logging
 import socket
 
 HOST = ''  # Listen on all available interfaces
 PORT = 9090
 BUFFER_SIZE = 1024 * 1024 * 1024
+
+# Configure logging
+logging.basicConfig(filename='server.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
 
 def handle_client(client_socket):
     # Receive data from the client
