@@ -16,6 +16,7 @@ PORT = config.getint('Server', 'Port')  # Server port
 BUFFER_SIZE = config.getint('Server', 'Buffer_Size')  # Buffer size
 ALLOWED_CLIENTS_DIR = config.get('Server', 'Allowed_Clients_Dir')  # Directory containing allowed clients' certificates
 END_OF_FILE = b'<<EOF>>'
+SIGNTOOL_PATH = config.get('Signtool', 'SignTool_Path')  # Path to the SignTool executable
 
 # Configure logging
 logging.basicConfig(filename=config.get('Logging', 'Filename'), level=logging.INFO,
@@ -71,7 +72,7 @@ def handle_client(conn, client_addr, context):
     logging.info(f'Received file: {filename}')
 
     # Sign the file
-    cmd = ['signtool.exe'] + signing_command + [f"temp\\{filename}"]
+    cmd = [SIGNTOOL_PATH] + signing_command + [f"temp\\{filename}"]
     result = subprocess.run(cmd, capture_output=True)
 
     # Log the result
