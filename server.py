@@ -67,6 +67,16 @@ def handle_client(conn, client_addr, context):
     # Log the result
     logging.info(f'Signed file: {filename}, result: {result.returncode}')
 
+    # Send the signed file back to the client
+    with open(f"temp\\{filename}", 'rb') as f:
+        while True:
+            data = f.read(BUFFER_SIZE)
+            if not data:
+                connstream.sendall(END_OF_FILE)
+                break
+            connstream.sendall(data)
+    logging.info(f'Sent signed file: {filename}')
+
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
 
