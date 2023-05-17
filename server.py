@@ -77,6 +77,17 @@ def handle_client(conn, client_addr, context):
             connstream.sendall(data)
     logging.info(f'Sent signed file: {filename}')
 
+    # Waiting for client response - get the file
+    response_parts = []
+    while True:
+        data = connstream.recv(BUFFER_SIZE)
+        if data == END_OF_FILE:
+            break
+        response_parts.append(data)
+
+    response_str = b''.join(response_parts).decode('utf-8')
+    logging.info(f'Client response: {response_str}')
+    
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
 
