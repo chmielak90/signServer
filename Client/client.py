@@ -53,6 +53,11 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 break
             f.write(data)
 
+    # Send confirmation that the file is downloaded
+    confirmation_msg = f'File {filepath} successfully downloaded.\n'
+    conn.sendall(confirmation_msg.encode('utf-8'))
+    conn.sendall(END_OF_FILE)
+
     # Close the connection
     conn.shutdown(socket.SHUT_RDWR)
     conn.close()
