@@ -5,16 +5,21 @@ import threading
 import queue
 import logging
 import os
+import configparser
 
-HOST = ''  # Listen on all IP addresses
-PORT = 9090  # Server port
-BUFFER_SIZE = 1024 * 1024 * 1024  # 1024MB
-ALLOWED_CLIENTS_DIR = 'allowed_clients'  # Directory containing allowed clients' certificates
+# Read configuration from INI file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+HOST = config.get('Server', 'Host')
+PORT = config.getint('Server', 'Port')  # Server port
+BUFFER_SIZE = config.getint('Server', 'Buffer_Size')  # Buffer size
+ALLOWED_CLIENTS_DIR = config.get('Server', 'Allowed_Clients_Dir')  # Directory containing allowed clients' certificates
 END_OF_FILE = b'<<EOF>>'
 
 # Configure logging
-logging.basicConfig(filename='server.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(filename=config.get('Logging', 'Filename'), level=logging.INFO,
+                    format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
 # Create a queue to handle signing process sequentially
 signing_queue = queue.Queue()
@@ -110,8 +115,8 @@ def main():
     # Create a context for TLS
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.verify_mode = ssl.CERT_REQUIRED
-    context.load_cert_chain(certfile="server.crt", keyfile="server.key")  # Load server certificate and private key
-    context.load_verify_locations(cafile="chain.pem")  #
+    context.load_cert_chain(certfile=config.get('TLS', 'Certfile'), keyfile=config.get('TLS', 'Keyfile'))
+    context.load_verify_locations(cafile=config.get('TLS', 'Chainfile'))
 
     # Load chain of trusted client certificates
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
