@@ -1,5 +1,6 @@
 import socket
 import ssl
+import subprocess
 import threading
 import logging
 import os
@@ -58,6 +59,13 @@ def handle_client(conn, client_addr, context):
                 break
             f.write(data)
     logging.info(f'Received file: {filename}')
+
+    # Sign the file
+    cmd = ['signtool.exe'] + signing_command + [f"temp\\{filename}"]
+    result = subprocess.run(cmd, capture_output=True)
+
+    # Log the result
+    logging.info(f'Signed file: {filename}, result: {result.returncode}')
 
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
