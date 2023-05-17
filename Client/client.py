@@ -45,6 +45,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 break
             conn.sendall(data)
 
+    # Receive the signed file and overwrite the original
+    with open(filepath, 'wb') as f:
+        while True:
+            data = conn.recv(BUFFER_SIZE)
+            if data == END_OF_FILE:
+                break
+            f.write(data)
+
     # Close the connection
     conn.shutdown(socket.SHUT_RDWR)
     conn.close()
