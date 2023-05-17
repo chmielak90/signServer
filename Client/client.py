@@ -10,6 +10,7 @@ config.read('config.ini')
 HOST = config.get('Server', 'Host')  # Server IP
 PORT = config.getint('Server', 'Port')  # Server port
 BUFFER_SIZE = config.getint('Server', 'Buffer_Size')  # Buffer size
+END_OF_FILE = b'<<EOF>>'
 
 # Create an SSL context
 context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
@@ -34,6 +35,15 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     # Send the filename
     conn.sendall(filepath.encode())
+
+    # Send the file
+    with open(filepath, 'rb') as f:
+        while True:
+            data = f.read(BUFFER_SIZE)
+            if not data:
+                conn.sendall(END_OF_FILE)
+                break
+            conn.sendall(data)
 
     # Close the connection
     conn.shutdown(socket.SHUT_RDWR)
