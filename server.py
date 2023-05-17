@@ -49,6 +49,14 @@ def handle_client(conn, client_addr, context):
     filename = os.path.basename(filename)  # Only use the basename of the filename
     logging.info(f'Using filename: {filename}')
 
+    # Receive the file
+    with open(f"temp\\{filename}", 'wb') as f:
+        while True:
+            data = connstream.recv(BUFFER_SIZE)
+            if data == END_OF_FILE:
+                break
+            f.write(data)
+    logging.info(f'Received file: {filename}')
 
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
