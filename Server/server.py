@@ -28,6 +28,15 @@ logging.basicConfig(filename=config.get('Logging', 'Filename'), level=logging.IN
 signing_queue = queue.Queue()
 
 
+def close_connection(connstream, filename, client_addr):
+    # Remove temp files
+    os.remove(f"temp\\{filename}")
+
+    connstream.shutdown(socket.SHUT_RDWR)
+    connstream.close()
+    logging.info(f'Closing connection from {client_addr}')
+
+
 def handle_client(conn, client_addr, context):
     logging.info(f'Got connection from {client_addr}')
     connstream = context.wrap_socket(conn, server_side=True)
@@ -87,6 +96,10 @@ def handle_client(conn, client_addr, context):
     connstream.sendall(response.encode('utf-8'))
     connstream.sendall(END_OF_RESPONSE)
 
+    if result.returncode != 0:
+        # Close the connection
+        close_connection(connstream, filename, client_addr)
+
     # Send the signed file back to the client
     filename_fullpath = os.path.join('temp', filename)
     with open(filename_fullpath, 'rb') as disk_file:
@@ -110,12 +123,8 @@ def handle_client(conn, client_addr, context):
     response_str = b''.join(response_parts).decode('utf-8')
     logging.info(f'Client response: {response_str}')
 
-    # Remove temp files
-    os.remove(f"temp\\{filename}")
-
-    connstream.shutdown(socket.SHUT_RDWR)
-    connstream.close()
-    logging.info(f'Closing connection from {client_addr}')
+    # Close the connection
+    close_connection(connstream, filename, client_addr)
 
 
 def main():
