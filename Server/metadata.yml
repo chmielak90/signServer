@@ -1,0 +1,7 @@
+Version: 0.1.0.0
+CompanyName: Michal Chmielewski
+FileDescription: Sign server for signtool.exe
+InternalName: Sign server
+LegalCopyright: MIT License
+OriginalFilename: server.exe
+ProductName: Sign server
