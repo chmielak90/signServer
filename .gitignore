@@ -4,3 +4,7 @@
 /dist/
 /SignServer/
 /SignServer.zip
+/Client/file_version_info.txt
+/Server/file_version_info.txt
+/server.spec
+/client.spec
