@@ -1,7 +1,7 @@
-import configparser
 import socket
 import ssl
 import sys
+import configparser
 
 # Read configuration from INI file
 config = configparser.ConfigParser()
@@ -58,6 +58,23 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     conn.sendall(confirmation_msg.encode('utf-8'))
     conn.sendall(END_OF_FILE)
 
+    # Receive the exit code
+    response_parts = []
+    while True:
+        data = conn.recv(BUFFER_SIZE)
+        if data == END_OF_FILE:
+            break
+        response_parts.append(data)
+
+    response_str = b''.join(response_parts).decode('utf-8')
+    output, exit_code_str = response_str.rsplit('\nExit code: ', 1)
+    exit_code = int(exit_code_str)
+
     # Close the connection
     conn.shutdown(socket.SHUT_RDWR)
     conn.close()
+
+    # Print the output
+    sys.stdout.write(output)
+    # Exit with the same exit code as the signtool command
+    sys.exit(exit_code)
