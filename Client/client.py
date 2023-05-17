@@ -29,6 +29,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     # Connect to server
     conn.connect((HOST, PORT))
 
+    # Send the command
+    conn.sendall(command.encode())
+
+    # Send the filename
+    conn.sendall(filepath.encode())
+
     # Close the connection
     conn.shutdown(socket.SHUT_RDWR)
     conn.close()
