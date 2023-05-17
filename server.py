@@ -2,6 +2,7 @@ import socket
 import ssl
 import subprocess
 import threading
+import queue
 import logging
 import os
 
@@ -14,6 +15,10 @@ END_OF_FILE = b'<<EOF>>'
 # Configure logging
 logging.basicConfig(filename='server.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
+
+# Create a queue to handle signing process sequentially
+signing_queue = queue.Queue()
+
 
 def handle_client(conn, client_addr, context):
     logging.info(f'Got connection from {client_addr}')
@@ -100,10 +105,7 @@ def handle_client(conn, client_addr, context):
     connstream.close()
     logging.info(f'Closing connection from {client_addr}')
 
-    connstream.shutdown(socket.SHUT_RDWR)
-    connstream.close()
 
-# Main function to start the server
 def main():
     # Create a context for TLS
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
@@ -123,4 +125,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
