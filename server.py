@@ -87,7 +87,19 @@ def handle_client(conn, client_addr, context):
 
     response_str = b''.join(response_parts).decode('utf-8')
     logging.info(f'Client response: {response_str}')
-    
+
+    # Remove temp files
+    os.remove(f"temp\\{filename}")
+
+    # Send the server's response
+    response = result.stdout.decode() + '\nExit code: ' + str(result.returncode) + '\n'
+    connstream.sendall(response.encode('utf-8'))
+    connstream.sendall(END_OF_FILE)
+
+    connstream.shutdown(socket.SHUT_RDWR)
+    connstream.close()
+    logging.info(f'Closing connection from {client_addr}')
+
     connstream.shutdown(socket.SHUT_RDWR)
     connstream.close()
 
