@@ -1,28 +1,40 @@
 # File Signing Server and Client
 
-This project contains a server (`server.py`) and client (`client.py`) that use TLS for secure communication to sign files. The server receives a file and a signing command from a client, signs the file using `signtool.exe`, and sends it back to the client. The client then saves the signed file.
+This project contains a server and a client that use TLS for secure communication to sign files (don't accept self-signed certificate). The server receives a file and a signing command from the client, signs the file using `signtool.exe`, and sends it back to the client. The client then saves the signed file.
+
+## Requirements
+
+- Python 3.6 or higher
+- A C++ compiler if you're installing the Python requirements on Windows
 
 ## Installation
 
-This project has a few dependencies, which are listed in the `requirements.txt` file.
+This project has a few dependencies, which are listed in the `requirements.txt` file. To install these dependencies, you should first make sure that you have Python installed on your system.
 
-To install these dependencies, you should first make sure that you have Python installed on your system. Python 3.6 or higher is recommended.
-
-Once Python is installed, you can install the dependencies by running the following command in your command line:
+Before running the Makefile, make sure to create a Python virtual environment. This can be done as follows:
 
 ```sh
-pip install -r [requirements.txt](requirements.txt)
+python -m venv venv
 ```
 
-This command will automatically download and install the correct versions of each dependency listed in the `requirements.txt` file.
+Then, you can use the `Makefile` to automatically build the project:
 
-If you're using a virtual environment (which is a good practice to isolate your project's dependencies), make sure to activate the environment before running the above command.
+```sh
+make all
+```
 
-Please note that Markdown does not support hyperlinking for code blocks. The link to the `requirements.txt` file will not work within the code block above. However, you can refer to the file here: [requirements.txt](requirements.txt)
+This command will:
+
+- Clean any previous builds.
+- Install the Python dependencies in the virtual environment.
+- Create version files for the client and server.
+- Use PyInstaller to build standalone executables for the client and server.
+- Move the executables and their dependencies to a new directory (`SignServer`).
+- Compress the `SignServer` directory into a `.zip` file.
 
 ## Configuration
 
-Before running the server and client scripts, you need to configure certain parameters in the `config.ini` file for the server:
+Before running the server and client scripts, you need to configure certain parameters in the `Server\config.ini` file for the server:
 
 - `Server`: Contains server-specific parameters.
   - `Host`: The IP address the server will bind to.
@@ -41,36 +53,17 @@ Before running the server and client scripts, you need to configure certain para
 - `Signtool`: Contains parameters for the signing tool.
   - `SignTool_Path`: The path to `signtool.exe`.
 
-In the `client.py` script, modify the following parameters:
+Before running the server and client scripts, you need to configure certain parameters in the `Client\config.ini` file for the server:
 
-- `HOST`: The IP address of the server.
-- `PORT`: The port the server is listening on.
-- `BUFFER_SIZE`: Buffer size in bytes used when receiving/sending data.
-- Replace `"client.crt"`, `"client.key"`, and `"chain.pem"` with your client certificate, private key, and chain of trusted server certificates, respectively.
+- `Server`: Contains server-specific parameters.
+  - `Host`: The IP address the server will bind to.
+  - `Port`: The port the server will listen on.
+  - `Buffer_Size`: Buffer size in bytes used when receiving/sending data.
 
-## Creating Executable Files
-
-You can use PyInstaller to create standalone executable files from `server.py` and `client.py`. This can be useful if you want to run the server and client on machines that don't have Python installed. 
-
-To install PyInstaller, run:
-
-```sh
-pip install pyinstaller
-```
-
-Then, to create the executable for `server.py`, run:
-
-```sh
-pyinstaller --onefile server.py
-```
-
-And for `client.py`, run:
-
-```sh
-pyinstaller --onefile client.py
-```
-
-This will create a `dist` directory containing the executables `server.exe` and `client.exe`.
+- `TLS`: Contains parameters for the TLS context.
+  - `Certfile`: The server's certificate file.
+  - `Keyfile`: The server's private key file.
+  - `Chainfile`: The file with the chain of trusted client certificates.
 
 ## Usage
 
@@ -79,36 +72,35 @@ This will create a `dist` directory containing the executables `server.exe` and 
 To start the server, run:
 
 ```sh
-server.exe
+python server.py
 ```
 
 The server will start listening for incoming connections. It logs all its activities, which can be viewed in the log file specified in the `config.ini` file.
 
 ### Client
 
-To use the client, run:
+To use the client, you need to specify the command and the file path as command line arguments. The command is the signing command that will be executed on the server. 
+
+Run the client with the signing command and the file path:
 
 ```sh
-client.exe <signing-command> <file-to-sign>
+python client.py <command> <filepath>
 ```
 
-The `<signing-command>` is the command to be used by `signtool.exe` for signing, and `<file-to-sign>` is the file you want to sign.
+Replace `<command>` with the signing command, and `<filepath>` with the path to the file to be signed.
 
-The client sends the signing command and the file to the server, receives the signed file from the server, and saves it by overwriting the original file. If the server signs the file successfully, the client will receive an exit code of 0.
+For example, if you're using signtool and you want to sign a file named `example.exe`, you would run:
 
-Note: The paths to the signing command and the file should be relative to the location of the `client.exe` file or absolute paths. 
+```sh
+python client.py "sign /a" example.exe
+```
 
-The `signtool.exe` path is now configurable through `config.ini`, under the `Signtool` section. Please ensure that the path is correctly set before running the server.
-## Security
+The client will connect to the server, send the command and the file, then wait for the server to send the signed file back. The original file will be overwritten with the signed file.
 
-The server uses certificate pinning to ensure that it only accepts connections from known clients. The certificates of allowed clients should be stored in the directory specified by the `Allowed_Clients_Dir` parameter in the `config.ini` file.
+## Contributing
 
-Both the server and client use TLS for secure communication, and both verify the certificate of the other party.
+Contributions are welcome!
 
-The client sends the file and the signing command to the server, and the server never initiates a connection to the client, which minimizes the attack surface.
+## Support
 
-## Limitations
-
-- The server and client currently only support Windows because they rely on `signtool.exe`, which is a Windows utility.
-- The server and client must have read/write access to the directories where they read/write files.
-- The server does not support multiple simultaneous connections.
+If you encounter any issues, please open an issue on our [GitHub issue tracker](https://github.com/chmielak90/signServer/issues).
