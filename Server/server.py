@@ -1,3 +1,4 @@
+import io
 import socket
 import ssl
 import subprocess
@@ -16,6 +17,8 @@ PORT = config.getint('Server', 'Port')  # Server port
 BUFFER_SIZE = config.getint('Server', 'Buffer_Size')  # Buffer size
 ALLOWED_CLIENTS_DIR = config.get('Server', 'Allowed_Clients_Dir')  # Directory containing allowed clients' certificates
 END_OF_FILE = b'<<EOF>>'
+END_OF_RESPONSE = b'<<EOR>>'
+READY = b'>>READY>>'
 SIGNTOOL_PATH = config.get('Signtool', 'SignTool_Path')  # Path to the SignTool executable
 
 # Configure logging
@@ -24,6 +27,15 @@ logging.basicConfig(filename=config.get('Logging', 'Filename'), level=logging.IN
 
 # Create a queue to handle signing process sequentially
 signing_queue = queue.Queue()
+
+
+def close_connection(connstream, filename, client_addr):
+    # Remove temp files
+    os.remove(f"temp\\{filename}")
+
+    connstream.shutdown(socket.SHUT_RDWR)
+    connstream.close()
+    logging.info(f'Closing connection from {client_addr}')
 
 
 def handle_client(conn, client_addr, context):
@@ -63,12 +75,14 @@ def handle_client(conn, client_addr, context):
     logging.info(f'Using filename: {filename}')
 
     # Receive the file
-    with open(f"temp\\{filename}", 'wb') as f:
-        while True:
-            data = connstream.recv(BUFFER_SIZE)
-            if data == END_OF_FILE:
-                break
-            f.write(data)
+    filename_fullpath = os.path.join('temp', filename)
+    with open(filename_fullpath, 'wb') as disk_file:
+        with io.BufferedWriter(disk_file, buffer_size=BUFFER_SIZE) as buf_file:
+            while True:
+                data = connstream.recv(BUFFER_SIZE)
+                if data == END_OF_FILE:
+                    break
+                buf_file.write(data)
     logging.info(f'Received file: {filename}')
 
     # Sign the file
@@ -78,38 +92,47 @@ def handle_client(conn, client_addr, context):
     # Log the result
     logging.info(f'Signed file: {filename}, result: {result.returncode}')
 
+    # Send the server's response
+    response = result.stdout.decode() + '\nExit code: ' + str(result.returncode) + '\n'
+    connstream.sendall(response.encode('utf-8'))
+    connstream.sendall(END_OF_RESPONSE)
+
+    if result.returncode != 0:
+        # Close the connection
+        close_connection(connstream, filename, client_addr)
+
+    # Wait for client is ready
+    while True:
+        data = connstream.recv(BUFFER_SIZE)
+        if data == READY:
+            break
+    logging.info('Client ready for receiving file')
+
     # Send the signed file back to the client
-    with open(f"temp\\{filename}", 'rb') as f:
-        while True:
-            data = f.read(BUFFER_SIZE)
-            if not data:
-                connstream.sendall(END_OF_FILE)
-                break
-            connstream.sendall(data)
+    filename_fullpath = os.path.join('temp', filename)
+    with open(filename_fullpath, 'rb') as disk_file:
+        with io.BufferedReader(disk_file, buffer_size=BUFFER_SIZE) as buf_file:
+            while True:
+                data = buf_file.read(BUFFER_SIZE)
+                if not data:
+                    connstream.sendall(END_OF_FILE)
+                    break
+                connstream.sendall(data)
     logging.info(f'Sent signed file: {filename}')
 
     # Waiting for client response - get the file
     response_parts = []
     while True:
         data = connstream.recv(BUFFER_SIZE)
-        if data == END_OF_FILE:
+        if data == END_OF_RESPONSE:
             break
         response_parts.append(data)
 
     response_str = b''.join(response_parts).decode('utf-8')
     logging.info(f'Client response: {response_str}')
 
-    # Remove temp files
-    os.remove(f"temp\\{filename}")
-
-    # Send the server's response
-    response = result.stdout.decode() + '\nExit code: ' + str(result.returncode) + '\n'
-    connstream.sendall(response.encode('utf-8'))
-    connstream.sendall(END_OF_FILE)
-
-    connstream.shutdown(socket.SHUT_RDWR)
-    connstream.close()
-    logging.info(f'Closing connection from {client_addr}')
+    # Close the connection
+    close_connection(connstream, filename, client_addr)
 
 
 def main():
