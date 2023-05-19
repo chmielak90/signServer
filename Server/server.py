@@ -18,6 +18,7 @@ BUFFER_SIZE = config.getint('Server', 'Buffer_Size')  # Buffer size
 ALLOWED_CLIENTS_DIR = config.get('Server', 'Allowed_Clients_Dir')  # Directory containing allowed clients' certificates
 END_OF_FILE = b'<<EOF>>'
 END_OF_RESPONSE = b'<<EOR>>'
+READY = b'>>READY>>'
 SIGNTOOL_PATH = config.get('Signtool', 'SignTool_Path')  # Path to the SignTool executable
 
 # Configure logging
@@ -100,6 +101,13 @@ def handle_client(conn, client_addr, context):
         # Close the connection
         close_connection(connstream, filename, client_addr)
 
+    # Wait for client is ready
+    while True:
+        data = connstream.recv(BUFFER_SIZE)
+        if data == READY:
+            break
+    logging.info('Client ready for receiving file')
+
     # Send the signed file back to the client
     filename_fullpath = os.path.join('temp', filename)
     with open(filename_fullpath, 'rb') as disk_file:
@@ -107,9 +115,9 @@ def handle_client(conn, client_addr, context):
             while True:
                 data = buf_file.read(BUFFER_SIZE)
                 if not data:
-                    conn.sendall(END_OF_FILE)
+                    connstream.sendall(END_OF_FILE)
                     break
-                conn.sendall(data)
+                connstream.sendall(data)
     logging.info(f'Sent signed file: {filename}')
 
     # Waiting for client response - get the file
