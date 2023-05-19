@@ -33,8 +33,8 @@ def close_connection(connstream, output, exit_code):
 
 # Create an SSL context
 context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-context.load_cert_chain(certfile=config.get('Client', 'Certfile'), keyfile=config.get('Client', 'Keyfile'))
-context.load_verify_locations(cafile=config.get('Client', 'Chainfile'))
+context.load_cert_chain(certfile=config.get('TLS', 'Certfile'), keyfile=config.get('Client', 'Keyfile'))
+context.load_verify_locations(cafile=config.get('TLS', 'Chainfile'))
 
 # Get the command and the file path from command line arguments
 command = ' '.join(sys.argv[1:-1])
